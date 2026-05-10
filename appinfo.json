@@ -19,14 +19,6 @@
     "B_THEME": 1
   },
   "resources": {
-    "media": [
-      {
-        "type": "font",
-        "name": "FONT_MINIMAL_9",
-        "file": "fonts/MinimalMono.ttf",
-        "characterRegex": "[A-Za-z0-9]",
-        "compatibility": "2.7"
-      }
-    ]
+    "media": []
   }
 }

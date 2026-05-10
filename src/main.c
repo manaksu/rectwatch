@@ -99,7 +99,6 @@ static GColor col_needle(void)  { return s.theme ? D_NEEDLE  : C_NEEDLE;  }
 /* ── State ── */
 static Window   *s_win;
 static Layer    *s_canvas;
-static GFont     s_font;
 static int       s_hours, s_minutes, s_seconds, s_steps;
 
 /* ── Hand point ── */
@@ -130,7 +129,7 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 static void draw_cal_row(GContext *ctx, const char **items, int n,
                           int current, int anchorX, int rowTopY,
                           int itemW, bool is_date) {
-  GFont font = s_font;
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
   int labelY  = rowTopY + TRI_H + TRI_GAP;
 
   /* Draw current ± 8 neighbours — bleed off edges */
@@ -339,12 +338,10 @@ static void window_load(Window *w) {
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);
   layer_add_child(root, s_canvas);
-  s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MINIMAL_9));
   time_t now = time(NULL);
   update_time(localtime(&now));
 }
 static void window_unload(Window *w) {
-  fonts_unload_custom_font(s_font);
   layer_destroy(s_canvas);
 }
 
