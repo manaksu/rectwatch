@@ -38,8 +38,8 @@
 
 /* Calendar rows */
 #define Y_MON   96
-#define Y_DOW  114
-#define Y_DATE 132
+#define Y_DOW  112
+#define Y_DATE 128
 #define TRI_H    3   /* triangle height px */
 #define TRI_GAP  2   /* gap between triangle and label */
 #define ROW_H   16   /* total row height */
@@ -299,14 +299,14 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     "Jul","Aug","Sep","Oct","Nov","Dec"
   };
   draw_cal_row(ctx, monL, 12, t->tm_mon,
-               88, Y_MON, 28, false);
+               88, Y_MON, 22, false);
 
   /* Day of week */
   static const char *dowL[] = {
     "Sun","Mon","Tue","Wed","Thu","Fri","Sat"
   };
   draw_cal_row(ctx, dowL, 7, t->tm_wday,
-               58, Y_DOW, 32, false);
+               58, Y_DOW, 26, false);
 
   /* Date */
   static const char *dateL[] = {
@@ -316,7 +316,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   };
   int dim = 31; /* use all 31, wrap naturally */
   draw_cal_row(ctx, dateL, dim, t->tm_mday - 1,
-               76, Y_DATE, 24, true);
+               76, Y_DATE, 19, true);
 
   /* Step scale */
   if (s.steps == 1) draw_step_scale(ctx);
@@ -355,7 +355,7 @@ static void window_load(Window *w) {
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);
   layer_add_child(root, s_canvas);
-  s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MINIMAL_11));
+  s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MINIMAL_9));
   time_t now = time(NULL);
   update_time(localtime(&now));
 }

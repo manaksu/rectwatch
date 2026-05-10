@@ -5,15 +5,9 @@
   "companyName": "Manaksu",
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": [
-    "basalt"
-  ],
-  "watchapp": {
-    "watchface": true
-  },
-  "capabilities": [
-    "configurable"
-  ],
+  "targetPlatforms": ["basalt"],
+  "watchapp": { "watchface": true },
+  "capabilities": ["configurable"],
   "appKeys": {
     "A_STEPS": 0,
     "B_THEME": 1,
@@ -23,7 +17,7 @@
     "media": [
       {
         "type": "font",
-        "name": "FONT_MINIMAL_11",
+        "name": "FONT_MINIMAL_9",
         "file": "fonts/MinimalMono.ttf",
         "characterRegex": "[A-Za-z0-9]",
         "compatibility": "2.7"
