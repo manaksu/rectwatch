@@ -3,23 +3,20 @@
  * appKeys alphabetical -> index:
  *   A_STEPS -> key 0   0=hide  1=show
  *   B_THEME -> key 1   0=light 1=dark
- *   C_CAPS  -> key 2   0=mixed 1=ALL CAPS
  */
 
 function loadCfg() {
   return {
     st: +(localStorage.getItem('st') || '1'),
-    th: +(localStorage.getItem('th') || '0'),
-    ca: +(localStorage.getItem('ca') || '0')
+    th: +(localStorage.getItem('th') || '0')
   };
 }
 function saveCfg(c) {
   localStorage.setItem('st', c.st);
   localStorage.setItem('th', c.th);
-  localStorage.setItem('ca', c.ca);
 }
 function sendMsg(c) {
-  var keys = [[0, c.st], [1, c.th], [2, c.ca]];
+  var keys = [[0, c.st], [1, c.th]];
   function sendNext(i) {
     if (i >= keys.length) return;
     var msg = {}; msg[keys[i][0]] = keys[i][1];
@@ -46,14 +43,13 @@ function buildConfig(c) {
     + '#s{display:block;width:100%;padding:14px;background:#333;color:#fff;border:1px solid #444;border-radius:8px;font-size:15px;margin-top:24px;cursor:pointer;box-sizing:border-box}';
   var script = "document.getElementById('s').onclick=function(){"
     + "function g(n){var e=document.querySelector('input[name='+n+']:checked');return e?+e.value:0;}"
-    + "location.href='pebblejs://close#'+encodeURIComponent(JSON.stringify({st:g('st'),th:g('th'),ca:g('ca')}));"
+    + "location.href='pebblejs://close#'+encodeURIComponent(JSON.stringify({st:g('st'),th:g('th')}));"
     + "};";
-  var html = '<!-- v2 --><!DOCTYPE html><html><head>'
+  var html = '<!-- v3 --><!DOCTYPE html><html><head>'
     + '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<style>' + style + '</style></head><body>'
     + '<h3>Face Theme</h3>' + radio('th', ['Light', 'Dark'], c.th)
     + '<h3>Step Scale</h3>' + radio('st', ['Hide', 'Show'], c.st)
-    + '<h3>Calendar Style</h3>' + radio('ca', ['Mixed case', 'ALL CAPS'], c.ca)
     + '<button id="s">Save</button>'
     + '<script>' + script + '<\/script></body></html>';
   return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);

@@ -5,13 +5,18 @@
   "companyName": "Manaksu",
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": ["basalt"],
-  "watchapp": { "watchface": true },
-  "capabilities": ["configurable"],
+  "targetPlatforms": [
+    "basalt"
+  ],
+  "watchapp": {
+    "watchface": true
+  },
+  "capabilities": [
+    "configurable"
+  ],
   "appKeys": {
     "A_STEPS": 0,
-    "B_THEME": 1,
-    "C_CAPS": 2
+    "B_THEME": 1
   },
   "resources": {
     "media": [

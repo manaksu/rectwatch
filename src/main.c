@@ -19,12 +19,10 @@
 #define SETTINGS_KEY  1
 #define KEY_STEPS     0
 #define KEY_THEME     1
-#define KEY_CAPS      2
 
 /* ── appKeys (alphabetical):
  *   A_STEPS  0  0=hide  1=show step scale
  *   B_THEME  1  0=cream  1=dark
- *   C_CAPS   2  0=mixed  1=ALL CAPS
  */
 
 /* ── Geometry ── */
@@ -52,14 +50,13 @@
 #define STEPS_GOAL 10000
 
 /* ── Settings ── */
-typedef struct { uint8_t steps; uint8_t theme; uint8_t caps; } Settings;
-static Settings s = { .steps=1, .theme=0, .caps=0 };
+typedef struct { uint8_t steps; uint8_t theme; } Settings;
+static Settings s = { .steps=1, .theme=0 };
 static void settings_load(void) {
   if (persist_exists(SETTINGS_KEY))
     persist_read_data(SETTINGS_KEY, &s, sizeof(s));
   if (s.theme > 1) s.theme = 0;
   if (s.steps > 1) s.steps = 1;
-  if (s.caps  > 1) s.caps  = 0;
 }
 static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)); }
 
@@ -127,18 +124,6 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 }
 
 
-/* ── Uppercase helper ── */
-static const char* maybe_upper(const char *str, char *buf, int bufsz) {
-  if (!s.caps) return str;
-  int i = 0;
-  while (str[i] && i < bufsz-1) {
-    buf[i] = (str[i] >= 'a' && str[i] <= 'z') ? str[i]-32 : str[i];
-    i++;
-  }
-  buf[i] = '\0';
-  return buf;
-}
-
 /* ── Calendar row ── */
 /* Show current label centred at anchorX + neighbours left/right */
 /* itemW = spacing between items in this row */
@@ -165,9 +150,9 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
     else              col = col_mark(); /* still visible, fades naturally off screen */
 
     char ubuf[8];
-    const char *label = maybe_upper(items[idx], ubuf, sizeof(ubuf));
+    int ui=0; while(items[idx][ui]&&ui<7){ubuf[ui]=(items[idx][ui]>='a'&&items[idx][ui]<='z')?items[idx][ui]-32:items[idx][ui];ui++;} ubuf[ui]='\0';
     graphics_context_set_text_color(ctx, col);
-    graphics_draw_text(ctx, label, font,
+    graphics_draw_text(ctx, ubuf, font,
       GRect(x - itemW/2, labelY, itemW, 10),
       GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
   }
@@ -344,7 +329,6 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   Tuple *t;
   t = dict_find(iter, KEY_STEPS); if (t) s.steps = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_THEME); if (t) s.theme = (uint8_t)(t->value->int32 & 1);
-  t = dict_find(iter, KEY_CAPS);  if (t) s.caps  = (uint8_t)(t->value->int32 & 1);
   settings_save();
   layer_mark_dirty(s_canvas);
 }
