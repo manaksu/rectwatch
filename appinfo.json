@@ -16,9 +16,18 @@
   ],
   "appKeys": {
     "A_STEPS": 0,
-    "B_THEME": 1
+    "B_THEME": 1,
+    "C_CAPS": 2
   },
   "resources": {
-    "media": []
+    "media": [
+      {
+        "type": "font",
+        "name": "FONT_MINIMAL_11",
+        "file": "fonts/MinimalMono.ttf",
+        "characterRegex": "[A-Za-z0-9]",
+        "compatibility": "2.7"
+      }
+    ]
   }
 }
