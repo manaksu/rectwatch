@@ -20,6 +20,8 @@
 #define KEY_HEALTH    0
 #define KEY_STEPS     1
 #define KEY_THEME     2
+#define KEY_BOLD      3
+#define KEY_EPAPER    4
 
 /* ?? appKeys (alphabetical):
  *   A_STEPS  0  0=hide  1=show step scale
@@ -51,14 +53,16 @@
 #define STEPS_GOAL 10000
 
 /* ?? Settings ?? */
-typedef struct { uint8_t health; uint8_t steps; uint8_t theme; } Settings;
-static Settings s = { .health=1, .steps=1, .theme=0 };
+typedef struct { uint8_t health; uint8_t steps; uint8_t theme; uint8_t bold; uint8_t epaper; } Settings;
+static Settings s = { .health=1, .steps=1, .theme=0, .bold=0, .epaper=1 };
 static void settings_load(void) {
   if (persist_exists(SETTINGS_KEY))
     persist_read_data(SETTINGS_KEY, &s, sizeof(s));
   if (s.health > 1) s.health = 1;
   if (s.steps  > 1) s.steps  = 1;
   if (s.theme  > 1) s.theme  = 0;
+  if (s.bold   > 1) s.bold   = 0;
+  if (s.epaper > 1) s.epaper = 1;
 }
 static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)); }
 
@@ -132,7 +136,7 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 static void draw_cal_row(GContext *ctx, const char **items, int n,
                           int current, int anchorX, int rowTopY,
                           int itemW, bool is_date) {
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  GFont font = fonts_get_system_font(s.bold ? FONT_KEY_GOTHIC_14_BOLD : FONT_KEY_GOTHIC_14);
   int labelY  = rowTopY + TRI_H + TRI_GAP;
 
   /* Draw current ? 8 neighbours - bleed off edges */
@@ -270,6 +274,7 @@ static void draw_vertical_text(GContext *ctx, const char *text,
           int px = sx + (6 - gr);
           int py = cell_bottom - gc;
           graphics_fill_rect(ctx, GRect(px, py, 1, 1), 0, GCornerNone);
+          if (s.bold) graphics_fill_rect(ctx, GRect(px+1, py, 1, 1), 0, GCornerNone);
         }
       }
     }
@@ -321,7 +326,7 @@ static void draw_step_scale(GContext *ctx) {
       else        snprintf(lbl, sizeof(lbl), "%dk", i);
       graphics_context_set_text_color(ctx, col_scale());
       graphics_draw_text(ctx, lbl,
-        fonts_get_system_font(FONT_KEY_GOTHIC_14),
+        fonts_get_system_font(s.bold ? FONT_KEY_GOTHIC_14_BOLD : FONT_KEY_GOTHIC_14),
         GRect(x-7, SC_Y-18, 14, 14),
         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
     }
@@ -343,7 +348,7 @@ static void draw_step_scale(GContext *ctx) {
   snprintf(buf, sizeof(buf), "%d", s_steps);
   graphics_context_set_text_color(ctx, GColorDarkCandyAppleRed);
   graphics_draw_text(ctx, buf,
-    fonts_get_system_font(FONT_KEY_GOTHIC_14),
+    fonts_get_system_font(s.bold ? FONT_KEY_GOTHIC_14_BOLD : FONT_KEY_GOTHIC_14),
     GRect(SC_X2 - 42, SC_Y + 2, 44, 14),
     GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 }
@@ -514,6 +519,8 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, KEY_HEALTH); if (t) s.health = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_STEPS);  if (t) s.steps  = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_THEME);  if (t) s.theme  = (uint8_t)(t->value->int32 & 1);
+  t = dict_find(iter, KEY_BOLD);   if (t) s.bold   = (uint8_t)(t->value->int32 & 1);
+  t = dict_find(iter, KEY_EPAPER); if (t) s.epaper = (uint8_t)(t->value->int32 & 1);
   settings_save();
   layer_mark_dirty(s_canvas);
 }

@@ -1,9 +1,9 @@
 {
-  "uuid": "aaba23b8e-ec3a-4c71-b8fa-765f63c6c943",
+  "uuid": "6459c0ca-99ca-4898-8801-24b39d2e2c1e",
   "shortName": "RectWatch",
   "longName": "Rect Watch",
   "companyName": "Manaksu",
-  "versionLabel": "1.10",
+  "versionLabel": "1.25",
   "sdkVersion": "3",
   "targetPlatforms": [
     "basalt"
@@ -17,7 +17,9 @@
   "appKeys": {
     "A_HEALTH": 0,
     "B_STEPS": 1,
-    "C_THEME": 2
+    "C_THEME": 2,
+    "D_BOLD": 3,
+    "E_EPAPER": 4
   },
   "resources": {
     "media": []
