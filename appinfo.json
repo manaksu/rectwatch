@@ -3,7 +3,7 @@
   "shortName": "RectWatch",
   "longName": "Rect Watch",
   "companyName": "Manaksu",
-  "versionLabel": "1.0",
+  "versionLabel": "1.10",
   "sdkVersion": "3",
   "targetPlatforms": [
     "basalt"
