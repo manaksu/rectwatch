@@ -1,5 +1,5 @@
 /*
- * RectWatch — Pebble Time Steel (basalt) only
+ * RectWatch - Pebble Time Steel (basalt) only
  * Cream monochrome watchface
  *
  * Layout (144x168):
@@ -21,12 +21,12 @@
 #define KEY_STEPS     1
 #define KEY_THEME     2
 
-/* ── appKeys (alphabetical):
+/* ?? appKeys (alphabetical):
  *   A_STEPS  0  0=hide  1=show step scale
  *   B_THEME  1  0=cream  1=dark
  */
 
-/* ── Geometry ── */
+/* ?? Geometry ?? */
 #define FX   4
 #define FY   4
 #define FW  72
@@ -50,7 +50,7 @@
 #define SC_Y   158
 #define STEPS_GOAL 10000
 
-/* ── Settings ── */
+/* ?? Settings ?? */
 typedef struct { uint8_t health; uint8_t steps; uint8_t theme; } Settings;
 static Settings s = { .health=1, .steps=1, .theme=0 };
 static void settings_load(void) {
@@ -62,7 +62,7 @@ static void settings_load(void) {
 }
 static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)); }
 
-/* ── Colours ── */
+/* ?? Colours ?? */
 /* Cream theme */
 #define C_BG        GColorWhite
 #define C_FACE      GColorWhite
@@ -98,12 +98,13 @@ static GColor col_cal_dim(void) { return s.theme ? D_CAL_DIM : C_CAL_DIM; }
 static GColor col_scale(void)   { return s.theme ? D_SCALE   : C_SCALE;   }
 static GColor col_needle(void)  { return s.theme ? D_NEEDLE  : C_NEEDLE;  }
 
-/* ── State ── */
+/* ?? State ?? */
 static Window   *s_win;
 static Layer    *s_canvas;
 static int       s_hours, s_minutes, s_seconds, s_steps;
+static int       s_hr=0, s_cal=0, s_sleep=0, s_batt=100;
 
-/* ── Hand point ── */
+/* ?? Hand point ?? */
 static GPoint hand_pt(int angle_deg, int rx, int ry) {
   int32_t a = DEG_TO_TRIGANGLE(angle_deg - 90);
   return GPoint(
@@ -111,7 +112,7 @@ static GPoint hand_pt(int angle_deg, int rx, int ry) {
     CY + (int32_t)(sin_lookup(a) * ry / TRIG_MAX_RATIO));
 }
 
-/* ── Short thick downward triangle ── */
+/* ?? Short thick downward triangle ?? */
 /* apex at (x, apexY), widens upward */
 static void draw_tri_down(GContext *ctx, int x, int apexY) {
   graphics_context_set_fill_color(ctx, col_needle());
@@ -125,7 +126,7 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 }
 
 
-/* ── Calendar row ── */
+/* ?? Calendar row ?? */
 /* Show current label centred at anchorX + neighbours left/right */
 /* itemW = spacing between items in this row */
 static void draw_cal_row(GContext *ctx, const char **items, int n,
@@ -134,7 +135,7 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
   int labelY  = rowTopY + TRI_H + TRI_GAP;
 
-  /* Draw current ± 8 neighbours — bleed off edges */
+  /* Draw current ? 8 neighbours - bleed off edges */
   for (int off = -8; off <= 8; off++) {
     int idx = ((current + off) % n + n) % n;
     int x   = anchorX + off * itemW;
@@ -163,7 +164,7 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
 }
 
 
-/* ── Battery icon ── */
+/* ?? Battery icon ?? */
 static void draw_battery_icon(GContext *ctx) {
   int bx=130, by=3, bw=11, bh=6;
   graphics_context_set_stroke_color(ctx, col_mark_d());
@@ -178,40 +179,127 @@ static void draw_battery_icon(GContext *ctx) {
   graphics_fill_rect(ctx, GRect(bx+1, by+1, fw, bh-2), 0, GCornerNone);
 }
 
-/* ── Health stats ── */
-static void draw_health(GContext *ctx) {
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
-  int px=80, py=10, lh=24;
-  char buf[12];
-  /* Heart Rate */
-  graphics_context_set_text_color(ctx, col_mark());
-  graphics_draw_text(ctx, "HEART RATE", font, GRect(px,py,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-  snprintf(buf, sizeof(buf), "%d", s_hr);
-  graphics_context_set_text_color(ctx, col_mark_d());
-  graphics_draw_text(ctx, buf, font, GRect(px,py+9,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-  /* Calories */
-  py += lh;
-  graphics_context_set_text_color(ctx, col_mark());
-  graphics_draw_text(ctx, "CALORIES", font, GRect(px,py,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-  snprintf(buf, sizeof(buf), "%d", s_cal);
-  graphics_context_set_text_color(ctx, col_mark_d());
-  graphics_draw_text(ctx, buf, font, GRect(px,py+9,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-  /* Sleep */
-  py += lh;
-  graphics_context_set_text_color(ctx, col_mark());
-  graphics_draw_text(ctx, "SLEEP", font, GRect(px,py,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-  snprintf(buf, sizeof(buf), "%dH%02dM", s_sleep/60, s_sleep%60);
-  graphics_context_set_text_color(ctx, col_mark_d());
-  graphics_draw_text(ctx, buf, font, GRect(px,py+9,62,10),
-    GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+
+
+/* ?? Minimal Mono 5?7 pixel font (for health stats) ?? */
+static const uint8_t s_mm_font5x7[][5] = {
+  /* sp */ {0x00, 0x00, 0x00, 0x00, 0x00},
+  /* 0  */ {0x3C, 0x4A, 0x5A, 0x52, 0x3C},
+  /* 1  */ {0x22, 0x62, 0x7E, 0x02, 0x02},
+  /* 2  */ {0x2E, 0x4A, 0x4A, 0x52, 0x32},
+  /* 3  */ {0x44, 0x42, 0x52, 0x52, 0x3C},
+  /* 4  */ {0x70, 0x10, 0x10, 0x7E, 0x10},
+  /* 5  */ {0x74, 0x52, 0x52, 0x52, 0x0C},
+  /* 6  */ {0x3C, 0x52, 0x52, 0x12, 0x0C},
+  /* 7  */ {0x40, 0x40, 0x4E, 0x70, 0x00},
+  /* 8  */ {0x6C, 0x52, 0x52, 0x52, 0x3C},
+  /* 9  */ {0x30, 0x48, 0x4A, 0x4A, 0x3C},
+  /* A  */ {0x06, 0x7C, 0x74, 0x0E, 0x00},
+  /* B  */ {0x7E, 0x52, 0x52, 0x52, 0x3C},
+  /* C  */ {0x3C, 0x42, 0x42, 0x42, 0x24},
+  /* D  */ {0x7E, 0x42, 0x42, 0x42, 0x3C},
+  /* E  */ {0x7E, 0x52, 0x52, 0x52, 0x52},
+  /* F  */ {0x7E, 0x50, 0x50, 0x50, 0x50},
+  /* G  */ {0x3C, 0x42, 0x42, 0x4A, 0x2C},
+  /* H  */ {0x7E, 0x10, 0x10, 0x10, 0x7E},
+  /* I  */ {0x42, 0x42, 0x7E, 0x42, 0x42},
+  /* J  */ {0x04, 0x02, 0x02, 0x02, 0x7C},
+  /* K  */ {0x7E, 0x18, 0x24, 0x42, 0x42},
+  /* L  */ {0x7E, 0x02, 0x02, 0x02, 0x02},
+  /* M  */ {0x7E, 0x38, 0x0C, 0x38, 0x7E},
+  /* N  */ {0x7E, 0x20, 0x18, 0x04, 0x7E},
+  /* O  */ {0x3C, 0x42, 0x42, 0x42, 0x3C},
+  /* P  */ {0x7E, 0x50, 0x50, 0x50, 0x60},
+  /* Q  */ {0x3C, 0x42, 0x42, 0x46, 0x3E},
+  /* R  */ {0x7E, 0x50, 0x58, 0x54, 0x62},
+  /* S  */ {0x34, 0x52, 0x42, 0x4A, 0x2C},
+  /* T  */ {0x40, 0x40, 0x7E, 0x40, 0x40},
+  /* U  */ {0x7C, 0x02, 0x02, 0x02, 0x7C},
+  /* V  */ {0x60, 0x1E, 0x0E, 0x70, 0x00},
+  /* W  */ {0x7E, 0x1E, 0x38, 0x3E, 0x40},
+  /* X  */ {0x42, 0x3C, 0x18, 0x66, 0x00},
+  /* Y  */ {0x40, 0x60, 0x1E, 0x60, 0x40},
+  /* Z  */ {0x46, 0x4E, 0x52, 0x62, 0x00},
+  /* -  */ {0x00, 0x10, 0x10, 0x00, 0x00},
+  /* :  */ {0x00, 0x24, 0x24, 0x00, 0x00},
+};
+
+static int mm_font_index(char c) {
+  if (c == ' ') return 0;
+  if (c >= '0' && c <= '9') return 1 + (c - '0');
+  if (c >= 'A' && c <= 'Z') return 11 + (c - 'A');
+  if (c >= 'a' && c <= 'z') return 11 + (c - 'a');
+  if (c == '-') return 37;
+  if (c == ':') return 38;
+  return 0;
 }
 
-/* ── Step scale ── */
+/*
+ * Draw text rotated 90? CCW - reads bottom to top on screen.
+ * Anchor (sx, sy) = bottom of column, first char starts here going up.
+ * Each char cell: 7px wide x 5px tall on screen.
+ * Chars spaced 6px upward.
+ *
+ * 90? CCW mapping from glyph[gc][gr]:
+ *   screen_x = sx + gr          (glyph row 0=left on screen)
+ *   screen_y = char_bottom - gc (glyph col 0=bottom on screen)
+ */
+static void draw_vertical_text(GContext *ctx, const char *text,
+                                int sx, int sy, GColor col) {
+  graphics_context_set_fill_color(ctx, col);
+  int n = 0;
+  while (text[n]) n++;
+  for (int ci = 0; ci < n; ci++) {
+    int char_bottom = sy - ci * 6;
+    if (char_bottom - 5 < FY) break;
+    const uint8_t *glyph = s_mm_font5x7[mm_font_index(text[ci])];
+    for (int gc = 0; gc < 5; gc++) {
+      for (int gr = 0; gr < 7; gr++) {
+        if (glyph[gc] & (1 << (6 - gr))) {
+          int px = sx + (6 - gr);       /* NatureWatch mapping — corrects mirroring */
+          int py = char_bottom - (4 - gc);
+          graphics_fill_rect(ctx, GRect(px, py, 1, 1), 0, GCornerNone);
+        }
+      }
+    }
+  }
+}
+
+/* ?? Health stats - 5?7 pixel font, rotated 90? CCW ?? */
+/*
+ * 3 columns anchored at bottom-right of clock face (x=76, y=92).
+ * Each column 9px wide (7px glyph + 2px gap).
+ * Text reads bottom to top.
+ */
+static void draw_health(GContext *ctx) {
+  const int AX = FX + FW;   /* x=76 */
+  const int AY = FY + FH;   /* y=92 */
+  const int COL_W = 9;       /* 7px glyph + 2px gap */
+
+  char bufs[3][20];
+  snprintf(bufs[0], sizeof(bufs[0]), "HEART RATE:%d", s_hr);
+  snprintf(bufs[1], sizeof(bufs[1]), "CALORIES:%d", s_cal);
+  snprintf(bufs[2], sizeof(bufs[2]), "SLEEP:%dH%02d", s_sleep/60, s_sleep%60);
+
+  /* Uppercase then reverse — NatureWatch technique for correct bottom-to-top reading */
+  for (int b = 0; b < 3; b++) {
+    for (int i = 0; bufs[b][i]; i++)
+      if (bufs[b][i] >= 'a' && bufs[b][i] <= 'z') bufs[b][i] -= 32;
+    int len = 0; while (bufs[b][len]) len++;
+    for (int i = 0; i < len/2; i++) {
+      char tmp = bufs[b][i];
+      bufs[b][i] = bufs[b][len-1-i];
+      bufs[b][len-1-i] = tmp;
+    }
+  }
+
+  for (int col = 0; col < 3; col++) {
+    int sx = AX + col * COL_W;
+    draw_vertical_text(ctx, bufs[col], sx, AY, col_mark_d());
+  }
+}
+
+/* ?? Step scale ?? */
 static void draw_step_scale(GContext *ctx) {
   int pct = (s_steps >= STEPS_GOAL) ? 100 : s_steps * 100 / STEPS_GOAL;
 
@@ -235,7 +323,7 @@ static void draw_step_scale(GContext *ctx) {
     }
   }
 
-  /* Needle — pointing down to baseline */
+  /* Needle - pointing down to baseline */
   int nx = SC_X1 + pct * SC_SW / 100;
   graphics_context_set_fill_color(ctx, GColorDarkCandyAppleRed);
   for (int ty = 0; ty <= 8; ty++) {
@@ -256,14 +344,14 @@ static void draw_step_scale(GContext *ctx) {
     GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 }
 
-/* ── Canvas ── */
+/* ?? Canvas ?? */
 static void canvas_update(Layer *layer, GContext *ctx) {
 
   /* Background */
   graphics_context_set_fill_color(ctx, col_bg());
   graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 
-  /* E-paper dither texture — subtle 2x2 grain */
+  /* E-paper dither texture - subtle 2x2 grain */
   if (s.theme == 0) {
     graphics_context_set_stroke_color(ctx, GColorLightGray);
     graphics_context_set_stroke_width(ctx, 1);
@@ -274,7 +362,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     }
   }
 
-  /* Face — same as bg, no border */
+  /* Face - same as bg, no border */
   graphics_context_set_fill_color(ctx, col_face());
   graphics_fill_rect(ctx, GRect(FX, FY, FW, FH), CR, GCornersAll);
 
@@ -340,7 +428,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   /* Health stats */
   if (s.health == 1) draw_health(ctx);
 
-  /* ── Calendar rows ── */
+  /* ?? Calendar rows ?? */
   time_t now_t = time(NULL);
   struct tm *t  = localtime(&now_t);
 
@@ -374,7 +462,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 }
 
 
-/* ── Health data ── */
+/* ?? Health data ?? */
 static void update_health(void) {
 #if defined(PBL_HEALTH)
   HealthMetric m = HealthMetricStepCount;
@@ -398,7 +486,7 @@ static void update_health(void) {
   s_batt = b.charge_percent;
 }
 
-/* ── Tick ── */
+/* ?? Tick ?? */
 static void update_time(struct tm *t) {
   s_hours   = t->tm_hour;
   s_minutes = t->tm_min;
@@ -416,7 +504,7 @@ static void update_time(struct tm *t) {
 }
 static void tick_handler(struct tm *t, TimeUnits u) { update_time(t); }
 
-/* ── AppMessage ── */
+/* ?? AppMessage ?? */
 static void inbox_received(DictionaryIterator *iter, void *context) {
   Tuple *t;
   t = dict_find(iter, KEY_HEALTH); if (t) s.health = (uint8_t)(t->value->int32 & 1);
@@ -426,7 +514,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   layer_mark_dirty(s_canvas);
 }
 
-/* ── Window ── */
+/* ?? Window ?? */
 static void window_load(Window *w) {
   Layer *root = window_get_root_layer(w);
   s_canvas = layer_create(layer_get_bounds(root));
@@ -440,7 +528,7 @@ static void window_unload(Window *w) {
   layer_destroy(s_canvas);
 }
 
-/* ── Init ── */
+/* ?? Init ?? */
 static void init(void) {
   settings_load();
   app_message_register_inbox_received(inbox_received);
