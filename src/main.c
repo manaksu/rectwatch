@@ -93,6 +93,7 @@ static GColor col_scale(void)   { return s.theme ? D_SCALE   : C_SCALE;   }
 /* ── State ── */
 static Window *s_win;
 static Layer  *s_canvas;
+static GFont   s_font;
 static int     s_hours, s_minutes, s_seconds;
 static int     s_steps = 0;
 static int     s_hr    = 0;
@@ -128,7 +129,7 @@ static void draw_battery_icon(GContext *ctx) {
 
 /* ── Health stats — plain text, right of clock face ── */
 static void draw_health(GContext *ctx) {
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
+  GFont font = s_font;
   /* Right panel: x=80..142, y=8..88 */
   int px = 80, py = 10;
   int line_h = 24;   /* px per stat row: label(8) + value(9) + gap(7) */
@@ -186,7 +187,7 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 static void draw_cal_row(GContext *ctx, const char **items, int n,
                           int current, int anchorX, int rowTopY,
                           int itemW, bool is_date) {
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
+  GFont font = s_font;
   int labelY = rowTopY + TRI_H + TRI_GAP;
   for (int off = -8; off <= 8; off++) {
     int idx = ((current + off) % n + n) % n;
@@ -197,6 +198,7 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
     GColor col;
     if      (isCur)   col = is_date ? col_mark_d() : col_cal_act();
     else if (dist==1) col = col_cal_dim();
+    else if (dist==2) col = col_mark();
     else              col = col_bg();
     char ubuf[8];
     int ui=0;
@@ -229,7 +231,7 @@ static void draw_step_scale(GContext *ctx) {
       snprintf(lbl, sizeof(lbl), i==0 ? "0" : "%dk", i);
       graphics_context_set_text_color(ctx, col_scale());
       graphics_draw_text(ctx, lbl,
-        fonts_get_system_font(FONT_KEY_GOTHIC_09),
+        s_font,
         GRect(x-7, SC_Y-14, 14, 10),
         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
     }
@@ -245,7 +247,7 @@ static void draw_step_scale(GContext *ctx) {
   snprintf(buf, sizeof(buf), "%d", s_steps);
   graphics_context_set_text_color(ctx, GColorDarkCandyAppleRed);
   graphics_draw_text(ctx, buf,
-    fonts_get_system_font(FONT_KEY_GOTHIC_09),
+    s_font,
     GRect(SC_X2-36, SC_Y+2, 38, 10),
     GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 }
@@ -397,11 +399,15 @@ static void window_load(Window *w) {
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);
   layer_add_child(root, s_canvas);
+  s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MINIMAL_9));
   update_health();
   time_t now = time(NULL);
   update_time(localtime(&now));
 }
-static void window_unload(Window *w) { layer_destroy(s_canvas); }
+static void window_unload(Window *w) {
+  fonts_unload_custom_font(s_font);
+  layer_destroy(s_canvas);
+}
 
 /* ── Init ── */
 static void init(void) {

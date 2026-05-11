@@ -20,6 +20,14 @@
     "C_THEME": 2
   },
   "resources": {
-    "media": []
+    "media": [
+      {
+        "type": "font",
+        "name": "FONT_MINIMAL_9",
+        "file": "fonts/MinimalMono.ttf",
+        "characterRegex": "[A-Za-z0-9:]",
+        "compatibility": "2.7"
+      }
+    ]
   }
 }
