@@ -36,18 +36,18 @@
 #define CR  10
 
 /* Calendar rows */
-#define Y_MON   96
-#define Y_DOW  112
-#define Y_DATE 128
-#define TRI_H    3   /* triangle height px */
-#define TRI_GAP  2   /* gap between triangle and label */
+#define Y_MON   93
+#define Y_DOW  111
+#define Y_DATE 129
+#define TRI_H    6   /* triangle height px */
+#define TRI_GAP  0   /* gap between triangle and label */
 #define ROW_H   16   /* total row height */
 
 /* Step scale */
 #define SC_X1    2
 #define SC_X2  142
 #define SC_SW  140
-#define SC_Y   158
+#define SC_Y   165
 #define STEPS_GOAL 10000
 
 /* ?? Settings ?? */
@@ -132,7 +132,7 @@ static void draw_tri_down(GContext *ctx, int x, int apexY) {
 static void draw_cal_row(GContext *ctx, const char **items, int n,
                           int current, int anchorX, int rowTopY,
                           int itemW, bool is_date) {
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   int labelY  = rowTopY + TRI_H + TRI_GAP;
 
   /* Draw current ? 8 neighbours - bleed off edges */
@@ -155,12 +155,12 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
     int ui=0; while(items[idx][ui]&&ui<7){ubuf[ui]=(items[idx][ui]>='a'&&items[idx][ui]<='z')?items[idx][ui]-32:items[idx][ui];ui++;} ubuf[ui]='\0';
     graphics_context_set_text_color(ctx, col);
     graphics_draw_text(ctx, ubuf, font,
-      GRect(x - itemW/2, labelY, itemW, 10),
-      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+      GRect(x - itemW, labelY, itemW*2, 16),
+      GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
   }
 
   /* Triangle above current, apex pointing down */
-  draw_tri_down(ctx, anchorX, rowTopY + TRI_H);
+  draw_tri_down(ctx, anchorX, labelY + 2);
 }
 
 
@@ -183,47 +183,46 @@ static void draw_battery_icon(GContext *ctx) {
 
 /* ?? Minimal Mono 5?7 pixel font (for health stats) ?? */
 static const uint8_t s_mm_font5x7[][5] = {
-  /* sp */ {0x00, 0x00, 0x00, 0x00, 0x00},
-  /* 0  */ {0x3C, 0x4A, 0x5A, 0x52, 0x3C},
-  /* 1  */ {0x22, 0x62, 0x7E, 0x02, 0x02},
-  /* 2  */ {0x2E, 0x4A, 0x4A, 0x52, 0x32},
-  /* 3  */ {0x44, 0x42, 0x52, 0x52, 0x3C},
-  /* 4  */ {0x70, 0x10, 0x10, 0x7E, 0x10},
-  /* 5  */ {0x74, 0x52, 0x52, 0x52, 0x0C},
-  /* 6  */ {0x3C, 0x52, 0x52, 0x12, 0x0C},
-  /* 7  */ {0x40, 0x40, 0x4E, 0x70, 0x00},
-  /* 8  */ {0x6C, 0x52, 0x52, 0x52, 0x3C},
-  /* 9  */ {0x30, 0x48, 0x4A, 0x4A, 0x3C},
-  /* A  */ {0x06, 0x7C, 0x74, 0x0E, 0x00},
-  /* B  */ {0x7E, 0x52, 0x52, 0x52, 0x3C},
-  /* C  */ {0x3C, 0x42, 0x42, 0x42, 0x24},
-  /* D  */ {0x7E, 0x42, 0x42, 0x42, 0x3C},
-  /* E  */ {0x7E, 0x52, 0x52, 0x52, 0x52},
-  /* F  */ {0x7E, 0x50, 0x50, 0x50, 0x50},
-  /* G  */ {0x3C, 0x42, 0x42, 0x4A, 0x2C},
-  /* H  */ {0x7E, 0x10, 0x10, 0x10, 0x7E},
-  /* I  */ {0x42, 0x42, 0x7E, 0x42, 0x42},
-  /* J  */ {0x04, 0x02, 0x02, 0x02, 0x7C},
-  /* K  */ {0x7E, 0x18, 0x24, 0x42, 0x42},
-  /* L  */ {0x7E, 0x02, 0x02, 0x02, 0x02},
-  /* M  */ {0x7E, 0x38, 0x0C, 0x38, 0x7E},
-  /* N  */ {0x7E, 0x20, 0x18, 0x04, 0x7E},
-  /* O  */ {0x3C, 0x42, 0x42, 0x42, 0x3C},
-  /* P  */ {0x7E, 0x50, 0x50, 0x50, 0x60},
-  /* Q  */ {0x3C, 0x42, 0x42, 0x46, 0x3E},
-  /* R  */ {0x7E, 0x50, 0x58, 0x54, 0x62},
-  /* S  */ {0x34, 0x52, 0x42, 0x4A, 0x2C},
-  /* T  */ {0x40, 0x40, 0x7E, 0x40, 0x40},
-  /* U  */ {0x7C, 0x02, 0x02, 0x02, 0x7C},
-  /* V  */ {0x60, 0x1E, 0x0E, 0x70, 0x00},
-  /* W  */ {0x7E, 0x1E, 0x38, 0x3E, 0x40},
-  /* X  */ {0x42, 0x3C, 0x18, 0x66, 0x00},
-  /* Y  */ {0x40, 0x60, 0x1E, 0x60, 0x40},
-  /* Z  */ {0x46, 0x4E, 0x52, 0x62, 0x00},
-  /* -  */ {0x00, 0x10, 0x10, 0x00, 0x00},
-  /* :  */ {0x00, 0x24, 0x24, 0x00, 0x00},
+  /* sp */ {0x00,0x00,0x00,0x00,0x00},
+  /* 0  */ {0x3E,0x51,0x49,0x45,0x3E},
+  /* 1  */ {0x00,0x42,0x7F,0x40,0x00},
+  /* 2  */ {0x42,0x61,0x51,0x49,0x46},
+  /* 3  */ {0x21,0x41,0x45,0x4B,0x31},
+  /* 4  */ {0x18,0x14,0x12,0x7F,0x10},
+  /* 5  */ {0x27,0x45,0x45,0x45,0x39},
+  /* 6  */ {0x3C,0x4A,0x49,0x49,0x30},
+  /* 7  */ {0x01,0x71,0x09,0x05,0x03},
+  /* 8  */ {0x36,0x49,0x49,0x49,0x36},
+  /* 9  */ {0x06,0x49,0x49,0x29,0x1E},
+  /* A  */ {0x7E,0x11,0x11,0x11,0x7E},
+  /* B  */ {0x7F,0x49,0x49,0x49,0x36},
+  /* C  */ {0x3E,0x41,0x41,0x41,0x22},
+  /* D  */ {0x7F,0x41,0x41,0x22,0x1C},
+  /* E  */ {0x7F,0x49,0x49,0x49,0x41},
+  /* F  */ {0x7F,0x09,0x09,0x09,0x01},
+  /* G  */ {0x3E,0x41,0x49,0x49,0x7A},
+  /* H  */ {0x7F,0x08,0x08,0x08,0x7F},
+  /* I  */ {0x00,0x41,0x7F,0x41,0x00},
+  /* J  */ {0x20,0x40,0x41,0x3F,0x01},
+  /* K  */ {0x7F,0x08,0x14,0x22,0x41},
+  /* L  */ {0x7F,0x40,0x40,0x40,0x40},
+  /* M  */ {0x7F,0x02,0x04,0x02,0x7F},
+  /* N  */ {0x7F,0x04,0x08,0x10,0x7F},
+  /* O  */ {0x3E,0x41,0x41,0x41,0x3E},
+  /* P  */ {0x7F,0x09,0x09,0x09,0x06},
+  /* Q  */ {0x3E,0x41,0x51,0x21,0x5E},
+  /* R  */ {0x7F,0x09,0x19,0x29,0x46},
+  /* S  */ {0x46,0x49,0x49,0x49,0x31},
+  /* T  */ {0x01,0x01,0x7F,0x01,0x01},
+  /* U  */ {0x3F,0x40,0x40,0x40,0x3F},
+  /* V  */ {0x1F,0x20,0x40,0x20,0x1F},
+  /* W  */ {0x3F,0x40,0x38,0x40,0x3F},
+  /* X  */ {0x63,0x14,0x08,0x14,0x63},
+  /* Y  */ {0x07,0x08,0x70,0x08,0x07},
+  /* Z  */ {0x61,0x51,0x49,0x45,0x43},
+  /* -  */ {0x08,0x08,0x08,0x08,0x08},
+  /* :  */ {0x00,0x36,0x36,0x00,0x00},
 };
-
 static int mm_font_index(char c) {
   if (c == ' ') return 0;
   if (c >= '0' && c <= '9') return 1 + (c - '0');
@@ -246,18 +245,30 @@ static int mm_font_index(char c) {
  */
 static void draw_vertical_text(GContext *ctx, const char *text,
                                 int sx, int sy, GColor col) {
+  /* Draws text bottom-to-top starting at (sx, sy).
+   * Each char cell: 7px wide, 5px tall on screen.
+   * Glyph rotated 90deg CCW: glyph col -> screen y (up), glyph row -> screen x (right)
+   * char 0 starts at sy (bottom), each next char 6px higher.
+   */
   graphics_context_set_fill_color(ctx, col);
   int n = 0;
   while (text[n]) n++;
   for (int ci = 0; ci < n; ci++) {
-    int char_bottom = sy - ci * 6;
-    if (char_bottom - 5 < FY) break;
+    /* bottom of this char cell */
+    int cell_bottom = sy - ci * 6;
+    if (cell_bottom - 5 < FY) break;
     const uint8_t *glyph = s_mm_font5x7[mm_font_index(text[ci])];
+    /* glyph[gc] = column gc (0=leftmost col of letter)
+     * bit (6-gr) = row gr (0=top of letter)
+     * 90deg CCW rotation for bottom-to-top reading:
+     *   screen x = sx + (6 - gr)   <- row 0(top of letter) maps to right side
+     *   screen y = cell_bottom - gc <- col 0(left) maps to bottom
+     */
     for (int gc = 0; gc < 5; gc++) {
       for (int gr = 0; gr < 7; gr++) {
         if (glyph[gc] & (1 << (6 - gr))) {
-          int px = sx + (6 - gr);       /* NatureWatch mapping — corrects mirroring */
-          int py = char_bottom - (4 - gc);
+          int px = sx + (6 - gr);
+          int py = cell_bottom - gc;
           graphics_fill_rect(ctx, GRect(px, py, 1, 1), 0, GCornerNone);
         }
       }
@@ -281,17 +292,10 @@ static void draw_health(GContext *ctx) {
   snprintf(bufs[1], sizeof(bufs[1]), "CALORIES:%d", s_cal);
   snprintf(bufs[2], sizeof(bufs[2]), "SLEEP:%dH%02d", s_sleep/60, s_sleep%60);
 
-  /* Uppercase then reverse — NatureWatch technique for correct bottom-to-top reading */
-  for (int b = 0; b < 3; b++) {
+  /* Uppercase only */
+  for (int b = 0; b < 3; b++)
     for (int i = 0; bufs[b][i]; i++)
       if (bufs[b][i] >= 'a' && bufs[b][i] <= 'z') bufs[b][i] -= 32;
-    int len = 0; while (bufs[b][len]) len++;
-    for (int i = 0; i < len/2; i++) {
-      char tmp = bufs[b][i];
-      bufs[b][i] = bufs[b][len-1-i];
-      bufs[b][len-1-i] = tmp;
-    }
-  }
 
   for (int col = 0; col < 3; col++) {
     int sx = AX + col * COL_W;
@@ -317,8 +321,8 @@ static void draw_step_scale(GContext *ctx) {
       else        snprintf(lbl, sizeof(lbl), "%dk", i);
       graphics_context_set_text_color(ctx, col_scale());
       graphics_draw_text(ctx, lbl,
-        fonts_get_system_font(FONT_KEY_GOTHIC_09),
-        GRect(x-7, SC_Y-14, 14, 10),
+        fonts_get_system_font(FONT_KEY_GOTHIC_14),
+        GRect(x-7, SC_Y-18, 14, 14),
         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
     }
   }
@@ -339,8 +343,8 @@ static void draw_step_scale(GContext *ctx) {
   snprintf(buf, sizeof(buf), "%d", s_steps);
   graphics_context_set_text_color(ctx, GColorDarkCandyAppleRed);
   graphics_draw_text(ctx, buf,
-    fonts_get_system_font(FONT_KEY_GOTHIC_09),
-    GRect(SC_X2 - 36, SC_Y + 2, 38, 10),
+    fonts_get_system_font(FONT_KEY_GOTHIC_14),
+    GRect(SC_X2 - 42, SC_Y + 2, 44, 14),
     GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 }
 
@@ -438,24 +442,24 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     "Jul","Aug","Sep","Oct","Nov","Dec"
   };
   draw_cal_row(ctx, monL, 12, t->tm_mon,
-               88, Y_MON, 22, false);
+               88, Y_MON, 38, false);
 
-  /* Day of week */
-  static const char *dowL[] = {
-    "Sun","Mon","Tue","Wed","Thu","Fri","Sat"
-  };
-  draw_cal_row(ctx, dowL, 7, t->tm_wday,
-               58, Y_DOW, 26, false);
-
-  /* Date */
+  /* Date row — now in middle */
   static const char *dateL[] = {
     "01","02","03","04","05","06","07","08","09","10",
     "11","12","13","14","15","16","17","18","19","20",
     "21","22","23","24","25","26","27","28","29","30","31"
   };
-  int dim = 31; /* use all 31, wrap naturally */
+  int dim = 31;
   draw_cal_row(ctx, dateL, dim, t->tm_mday - 1,
-               76, Y_DATE, 19, true);
+               76, Y_DOW, 22, true);
+
+  /* Day of week — now at bottom */
+  static const char *dowL[] = {
+    "Sun","Mon","Tue","Wed","Thu","Fri","Sat"
+  };
+  draw_cal_row(ctx, dowL, 7, t->tm_wday,
+               58, Y_DATE, 40, false);
 
   /* Step scale */
   if (s.steps == 1) draw_step_scale(ctx);
