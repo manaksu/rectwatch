@@ -22,6 +22,7 @@
 #define KEY_THEME     2
 #define KEY_BOLD      3
 #define KEY_EPAPER    4
+#define KEY_COLOR     5
 
 /* ?? appKeys (alphabetical):
  *   A_STEPS  0  0=hide  1=show step scale
@@ -53,8 +54,8 @@
 #define STEPS_GOAL 10000
 
 /* ?? Settings ?? */
-typedef struct { uint8_t health; uint8_t steps; uint8_t theme; uint8_t bold; uint8_t epaper; } Settings;
-static Settings s = { .health=1, .steps=1, .theme=0, .bold=0, .epaper=1 };
+typedef struct { uint8_t health; uint8_t steps; uint8_t theme; uint8_t bold; uint8_t epaper; uint8_t color; } Settings;
+static Settings s = { .health=1, .steps=1, .theme=0, .bold=0, .epaper=1, .color=0 };
 static void settings_load(void) {
   if (persist_exists(SETTINGS_KEY))
     persist_read_data(SETTINGS_KEY, &s, sizeof(s));
@@ -63,6 +64,7 @@ static void settings_load(void) {
   if (s.theme  > 1) s.theme  = 0;
   if (s.bold   > 1) s.bold   = 0;
   if (s.epaper > 1) s.epaper = 1;
+  if (s.color  > 2) s.color  = 0;
 }
 static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)); }
 
@@ -97,7 +99,16 @@ static GColor col_hand_h(void)  { return s.theme ? D_HAND_H  : C_HAND_H;  }
 static GColor col_hand_m(void)  { return s.theme ? D_HAND_M  : C_HAND_M;  }
 static GColor col_mark(void)    { return s.theme ? D_MARK    : C_MARK;    }
 static GColor col_mark_d(void)  { return s.theme ? D_MARK_D  : C_MARK_D;  }
-static GColor col_cal_act(void) { return s.theme ? D_CAL_ACT : C_CAL_ACT; }
+
+/* Accent colour: applies to active cal items + health stats */
+static GColor col_accent(void) {
+  if (s.theme == 1) return GColorWhite;
+  switch (s.color) {
+    case 1:  return GColorDarkGray;
+    case 2:  return GColorDarkCandyAppleRed;
+    default: return GColorBlack;
+  }
+}
 static GColor col_cal_dim(void) { return s.theme ? D_CAL_DIM : C_CAL_DIM; }
 static GColor col_scale(void)   { return s.theme ? D_SCALE   : C_SCALE;   }
 static GColor col_needle(void)  { return s.theme ? D_NEEDLE  : C_NEEDLE;  }
@@ -150,7 +161,7 @@ static void draw_cal_row(GContext *ctx, const char **items, int n,
 
     /* Fade by distance */
     GColor col;
-    if      (isCur)   col = is_date ? col_mark_d() : col_cal_act();
+    if      (isCur)   col = col_accent();
     else if (dist==1) col = col_cal_dim();
     else if (dist==2) col = col_mark();
     else              col = col_mark(); /* still visible, fades naturally off screen */
@@ -304,7 +315,139 @@ static void draw_health(GContext *ctx) {
 
   for (int col = 0; col < 3; col++) {
     int sx = AX + col * COL_W;
-    draw_vertical_text(ctx, bufs[col], sx, AY, col_mark_d());
+    draw_vertical_text(ctx, bufs[col], sx, AY, col_accent());
+  }
+}
+
+
+
+/* Draw pixel art progressively over 8 hours from midnight.
+ * 267 total pixels, revealed over 480 minutes.
+ * pixels_shown = elapsed_minutes * 267 / 480
+ * Pixels stored in draw order (row by row, left to right).
+ */
+/*
+ * draw_viz — right panel data visualization
+ * Zone: x=105..140 (35px), y=14..90 (76px)
+ * X-axis horizontal, Y-axis vertical — normal upright charts
+ * Rotates mode every 2 hours: 0=step bars, 1=HR line, 2=sleep bar, 3=scatter
+ */
+static void draw_viz(GContext *ctx) {
+  const int VX = 105;   /* left edge */
+  const int VY = 14;    /* top edge  */
+  const int VW = 35;    /* width     */
+  const int VH = 76;    /* height    */
+  const int VBY = VY + VH - 1; /* baseline y */
+
+  time_t now_t = time(NULL);
+  struct tm *t  = localtime(&now_t);
+  int mode = (t->tm_hour / 2) % 4;
+
+  graphics_context_set_fill_color(ctx, col_mark());
+  graphics_context_set_stroke_color(ctx, col_mark());
+  graphics_context_set_stroke_width(ctx, 1);
+
+  /* Baseline */
+  graphics_draw_line(ctx, GPoint(VX, VBY), GPoint(VX+VW-1, VBY));
+
+  if (mode == 0) {
+    /* ── Step bars (hourly proxy from s_steps) ── */
+    int n = t->tm_hour > 0 ? t->tm_hour : 1;
+    if (n > 10) n = 10;
+    int per_hr = s_steps / n;
+    int max_s  = 1200;
+    int bw = (VW - 2) / n - 1;
+    if (bw < 1) bw = 1;
+    for (int i = 0; i < n; i++) {
+      int bh = per_hr * (VH-4) / max_s;
+      if (bh > VH-4) bh = VH-4;
+      if (bh < 1)    bh = 1;
+      int x = VX + 1 + i * (bw+1);
+      int y = VBY - bh;
+      graphics_context_set_fill_color(ctx,
+        i == n-1 ? col_accent() : col_mark());
+      graphics_fill_rect(ctx, GRect(x, y, bw, bh), 0, GCornerNone);
+    }
+  }
+
+  else if (mode == 1) {
+    /* ── HR line chart ── */
+    int base  = s_hr > 10 ? s_hr : 72;
+    int mn = 50, mx = 110;
+    int n  = 8;
+    int pts_x[8], pts_y[8];
+    for (int i = 0; i < n; i++) {
+      int v = base + ((i*7+3) % 20) - 10;
+      if (v < mn) v = mn;
+      if (v > mx) v = mx;
+      pts_x[i] = VX + 1 + (VW-2)*i/(n-1);
+      pts_y[i] = VBY - 1 - (VH-6)*(v-mn)/(mx-mn);
+    }
+    /* dashed grid at 75bpm */
+    int gy = VBY - 1 - (VH-6)*(75-mn)/(mx-mn);
+    for (int x = VX; x < VX+VW; x += 3)
+      graphics_draw_pixel(ctx, GPoint(x, gy));
+    /* line */
+    graphics_context_set_stroke_color(ctx, col_mark_d());
+    graphics_context_set_stroke_color(ctx, col_accent());
+    for (int i = 0; i < n-1; i++)
+      graphics_draw_line(ctx, GPoint(pts_x[i], pts_y[i]),
+                              GPoint(pts_x[i+1], pts_y[i+1]));
+    /* dots */
+    for (int i = 0; i < n; i++) {
+      graphics_context_set_fill_color(ctx,
+        i == n-1 ? col_accent() : col_mark());
+      graphics_fill_rect(ctx,
+        GRect(pts_x[i]-1, pts_y[i]-1, 2, 2), 0, GCornerNone);
+    }
+  }
+
+  else if (mode == 2) {
+    /* ── Sleep vertical bar ── */
+    int pct   = s_sleep * 100 / 480;
+    if (pct > 100) pct = 100;
+    int bw    = VW / 2;
+    int bx    = VX + (VW - bw) / 2;
+    int fullH = VH - 4;
+    int fillH = fullH * pct / 100;
+    /* background */
+    graphics_context_set_fill_color(ctx, col_cal_dim());
+    graphics_fill_rect(ctx, GRect(bx, VY+2, bw, fullH), 0, GCornerNone);
+    /* fill */
+    graphics_context_set_fill_color(ctx, col_accent());
+    graphics_fill_rect(ctx, GRect(bx, VY+2+fullH-fillH, bw, fillH), 0, GCornerNone);
+    /* outline */
+    graphics_context_set_stroke_color(ctx, col_accent());
+    graphics_draw_rect(ctx, GRect(bx, VY+2, bw, fullH));
+    /* 50% tick */
+    graphics_context_set_stroke_color(ctx, col_bg());
+    graphics_draw_line(ctx,
+      GPoint(bx-1,    VY+2+fullH/2),
+      GPoint(bx+bw+1, VY+2+fullH/2));
+  }
+
+  else {
+    /* ── Scatter plot: steps vs HR ── */
+    /* X = hour of day (0..23), Y = step density */
+    int n = 20;
+    int max_s = 500;
+    graphics_context_set_fill_color(ctx, col_mark());
+    for (int i = 0; i < n; i++) {
+      /* Pseudo-random scatter seeded from step+hr data */
+      int seed  = (s_steps + s_hr * 7 + i * 31) % 1000;
+      int sx    = VX + 1 + (seed % (VW-4));
+      int sy_v  = (seed * 17 + i * 13) % (VH-6);
+      int sy    = VY + 2 + sy_v;
+      int sz    = (i % 3 == 0) ? 2 : 1;
+      graphics_context_set_fill_color(ctx,
+        sy_v < (VH-6)/2 ? col_accent() : col_mark());
+      graphics_fill_rect(ctx, GRect(sx, sy, sz, sz), 0, GCornerNone);
+    }
+    /* Trend line */
+    graphics_context_set_stroke_color(ctx, col_accent());
+    graphics_draw_line(ctx,
+      GPoint(VX+2, VBY-4),
+      GPoint(VX+VW-3, VY+8));
   }
 }
 
@@ -436,6 +579,8 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   draw_battery_icon(ctx);
   /* Health stats */
   if (s.health == 1) draw_health(ctx);
+  /* Data viz — changes every 2 hours */
+  draw_viz(ctx);
 
   /* ?? Calendar rows ?? */
   time_t now_t = time(NULL);
@@ -521,6 +666,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, KEY_THEME);  if (t) s.theme  = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_BOLD);   if (t) s.bold   = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_EPAPER); if (t) s.epaper = (uint8_t)(t->value->int32 & 1);
+  t = dict_find(iter, KEY_COLOR);  if (t) s.color  = (uint8_t)(t->value->int32 % 3);
   settings_save();
   layer_mark_dirty(s_canvas);
 }
