@@ -23,6 +23,7 @@
 #define KEY_BOLD      3
 #define KEY_EPAPER    4
 #define KEY_COLOR     5
+#define KEY_BORDER    6
 
 /* ?? appKeys (alphabetical):
  *   A_STEPS  0  0=hide  1=show step scale
@@ -54,8 +55,8 @@
 #define STEPS_GOAL 10000
 
 /* ?? Settings ?? */
-typedef struct { uint8_t health; uint8_t steps; uint8_t theme; uint8_t bold; uint8_t epaper; uint8_t color; } Settings;
-static Settings s = { .health=1, .steps=1, .theme=0, .bold=0, .epaper=1, .color=0 };
+typedef struct { uint8_t health; uint8_t steps; uint8_t theme; uint8_t bold; uint8_t epaper; uint8_t color; uint8_t border; } Settings;
+static Settings s = { .health=1, .steps=1, .theme=0, .bold=0, .epaper=1, .color=0, .border=1 };
 static void settings_load(void) {
   if (persist_exists(SETTINGS_KEY))
     persist_read_data(SETTINGS_KEY, &s, sizeof(s));
@@ -65,6 +66,7 @@ static void settings_load(void) {
   if (s.bold   > 1) s.bold   = 0;
   if (s.epaper > 1) s.epaper = 1;
   if (s.color  > 2) s.color  = 0;
+  if (s.border > 1) s.border = 1;
 }
 static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)); }
 
@@ -667,6 +669,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, KEY_BOLD);   if (t) s.bold   = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_EPAPER); if (t) s.epaper = (uint8_t)(t->value->int32 & 1);
   t = dict_find(iter, KEY_COLOR);  if (t) s.color  = (uint8_t)(t->value->int32 % 3);
+  t = dict_find(iter, KEY_BORDER); if (t) s.border = (uint8_t)(t->value->int32 & 1);
   settings_save();
   layer_mark_dirty(s_canvas);
 }
