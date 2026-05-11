@@ -15,8 +15,9 @@
     "configurable"
   ],
   "appKeys": {
-    "A_STEPS": 0,
-    "B_THEME": 1
+    "A_HEALTH": 0,
+    "B_STEPS": 1,
+    "C_THEME": 2
   },
   "resources": {
     "media": []
