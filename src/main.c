@@ -79,7 +79,7 @@ static void settings_save(void) { persist_write_data(SETTINGS_KEY, &s, sizeof(s)
 #define C_MARK      GColorDarkGray
 #define C_MARK_D    GColorBlack
 #define C_CAL_ACT   GColorBlack
-#define C_CAL_DIM   GColorLightGray
+#define C_CAL_DIM   GColorDarkGray
 #define C_SCALE     GColorDarkGray
 #define C_NEEDLE    GColorBlack
 
@@ -301,7 +301,7 @@ static void draw_vertical_text(GContext *ctx, const char *text,
  * Text reads bottom to top.
  */
 static void draw_health(GContext *ctx) {
-  const int AX = FX + FW;   /* x=76 */
+  const int AX = FX + FW + 2;   /* x=78 */
   const int AY = FY + FH;   /* y=92 */
   const int COL_W = 9;       /* 7px glyph + 2px gap */
 
@@ -349,8 +349,7 @@ static void draw_viz(GContext *ctx) {
   graphics_context_set_stroke_color(ctx, col_mark());
   graphics_context_set_stroke_width(ctx, 1);
 
-  /* Baseline */
-  graphics_draw_line(ctx, GPoint(VX, VBY), GPoint(VX+VW-1, VBY));
+  /* No baseline */
 
   if (mode == 0) {
     /* ── Step bars (hourly proxy from s_steps) ── */
@@ -516,9 +515,26 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     }
   }
 
-  /* Face - same as bg, no border */
+  /* Face */
   graphics_context_set_fill_color(ctx, col_face());
   graphics_fill_rect(ctx, GRect(FX, FY, FW, FH), CR, GCornersAll);
+  /* Clock border */
+  if (s.border) {
+    graphics_context_set_stroke_color(ctx, col_mark_d());
+    graphics_context_set_stroke_width(ctx, 1);
+    /* straight sides */
+    graphics_draw_line(ctx, GPoint(FX+CR,   FY),        GPoint(FX+FW-CR, FY));
+    graphics_draw_line(ctx, GPoint(FX+CR,   FY+FH-1),   GPoint(FX+FW-CR, FY+FH-1));
+    graphics_draw_line(ctx, GPoint(FX,      FY+CR),      GPoint(FX,       FY+FH-CR));
+    graphics_draw_line(ctx, GPoint(FX+FW-1, FY+CR),      GPoint(FX+FW-1,  FY+FH-CR));
+    /* corners — Pebble arc: 0=12oclock, clockwise
+       top-left:     270..360  top-right:    0..90
+       bottom-left:  180..270  bottom-right: 90..180  */
+    graphics_draw_arc(ctx, GRect(FX,         FY,         CR*2, CR*2), GOvalScaleModeFitCircle, DEG_TO_TRIGANGLE(270), DEG_TO_TRIGANGLE(360));
+    graphics_draw_arc(ctx, GRect(FX+FW-CR*2, FY,         CR*2, CR*2), GOvalScaleModeFitCircle, DEG_TO_TRIGANGLE(0),   DEG_TO_TRIGANGLE(90));
+    graphics_draw_arc(ctx, GRect(FX,         FY+FH-CR*2, CR*2, CR*2), GOvalScaleModeFitCircle, DEG_TO_TRIGANGLE(180), DEG_TO_TRIGANGLE(270));
+    graphics_draw_arc(ctx, GRect(FX+FW-CR*2, FY+FH-CR*2, CR*2, CR*2), GOvalScaleModeFitCircle, DEG_TO_TRIGANGLE(90),  DEG_TO_TRIGANGLE(180));
+  }
 
   /* 12 o'clock triangle (dark body + same tip) */
   graphics_context_set_stroke_color(ctx, col_hand_h());
